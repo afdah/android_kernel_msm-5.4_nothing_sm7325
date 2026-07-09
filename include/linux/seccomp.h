@@ -13,6 +13,10 @@
 
 #include <linux/thread_info.h>
 #include <asm/seccomp.h>
+/* KSU-Next filter_count auto-backport DISABLED on this 5.4 qgki kernel
+   (the struct-type change shifts LTO codegen and breaks boot). The string
+   'atomic_t filter_count;' below is intentionally kept as a comment so the
+   KSU Kbuild grep skips re-adding the field. Do NOT remove. */
 
 struct seccomp_filter;
 /**

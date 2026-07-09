@@ -155,3 +155,7 @@ arch/arm64/boot/dts/vendor
 arch/arm/boot/dts/vendor
 
 vendor/
+
+/KernelSU-Next/
+
+/vendor/
