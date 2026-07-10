@@ -159,3 +159,4 @@ vendor/
 /KernelSU-Next/
 
 /vendor/
+/susfs_boot.img

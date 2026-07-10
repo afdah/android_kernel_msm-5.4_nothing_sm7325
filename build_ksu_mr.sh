@@ -14,7 +14,7 @@ TOOLCHAIN=${TOOLCHAIN:-/root/toolchain/aosp-clang-r383902b1}
 OUT=${OUT:-out-ksu}
 JOBS=${JOBS:-$(nproc)}
 KSU_URL=${KSU_URL:-https://github.com/afdah/KernelSU-Next.git}
-KSU_PIN=${KSU_PIN:-d1efd68bec644bef2e88db3b7f2b1b5fae68f2df}
+KSU_PIN=30dfe298548928cd2344b7c3340db08afd4e8324
 LOCALVER='-qgki-g3f7ff67280a0'
 export PATH="$TOOLCHAIN/bin:$PATH"
 export LLVM=1 DISABLE_WRAPPER=1 ARCH=arm64 CC=clang
@@ -51,6 +51,11 @@ for f in fs/exec.c fs/open.c fs/read_write.c fs/stat.c; do
 done
 grep -q '^int path_umount' fs/namespace.c || { echo "ABORT: namespace.c path_umount missing"; exit 1; }
 grep -q '^int path_umount' fs/internal.h || { echo "ABORT: internal.h path_umount missing"; exit 1; }
+# SusFS kernel-side files (Phase C)
+grep -q 'obj-$(CONFIG_KSU_SUSFS) += susfs.o' fs/Makefile || { echo "ABORT: fs/Makefile susfs.o missing"; exit 1; }
+for f in fs/susfs.c fs/sus_su.c include/linux/susfs.h include/linux/susfs_def.h include/linux/sus_su.h; do
+  [ -f "$f" ] || { echo "ABORT: $f missing"; exit 1; }
+done
 
 # 4. config: base defconfig + KSU overlay
 make O="$OUT" ARCH=arm64 nothing_mr_stealth_defconfig
@@ -58,6 +63,23 @@ scripts/config --file "$OUT/.config" \
   --enable CONFIG_KSU \
   --enable CONFIG_KSU_MANUAL_HOOK \
   --disable CONFIG_KSU_KPROBES_HOOK \
+  --enable CONFIG_KSU_SUSFS \
+  --enable CONFIG_KSU_SUSFS_HAS_MAGIC_MOUNT \
+  --enable CONFIG_KSU_SUSFS_SUS_PATH \
+  --enable CONFIG_KSU_SUSFS_SUS_MOUNT \
+  --enable CONFIG_KSU_SUSFS_AUTO_ADD_SUS_KSU_DEFAULT_MOUNT \
+  --enable CONFIG_KSU_SUSFS_AUTO_ADD_SUS_BIND_MOUNT \
+  --enable CONFIG_KSU_SUSFS_SUS_KSTAT \
+  --enable CONFIG_KSU_SUSFS_TRY_UMOUNT \
+  --enable CONFIG_KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT \
+  --enable CONFIG_KSU_SUSFS_SPOOF_UNAME \
+  --enable CONFIG_KSU_SUSFS_ENABLE_LOG \
+  --enable CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS \
+  --enable CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG \
+  --enable CONFIG_KSU_SUSFS_OPEN_REDIRECT \
+  --enable CONFIG_KSU_SUSFS_SUS_MAP \
+  --disable CONFIG_KSU_SUSFS_SUS_OVERLAYFS \
+  --disable CONFIG_KSU_SUSFS_SUS_SU \
   --enable CONFIG_SHADOW_CALL_STACK \
   --enable CONFIG_SHADOW_CALL_STACK_VMAP \
   --disable CONFIG_HEADER_TEST --disable CONFIG_KERNEL_HEADER_TEST --disable CONFIG_UAPI_HEADER_TEST
@@ -75,6 +97,9 @@ grep -q '^CONFIG_KSU_MANUAL_HOOK=y' "$OUT/.config" || { echo "ABORT: MANUAL_HOOK
 grep -q '^CONFIG_KSU_KPROBES_HOOK=y' "$OUT/.config" && { echo "ABORT: KPROBES_HOOK is y"; exit 1; } || true
 grep -q '^CONFIG_SHADOW_CALL_STACK=y' "$OUT/.config" || { echo "ABORT: SCS not y (boot needs it)"; exit 1; }
 grep -q '^CONFIG_LTO_CLANG=y' "$OUT/.config" || { echo "ABORT: LTO not y (stealth)"; exit 1; }
+grep -q '^CONFIG_KSU_SUSFS=y' "$OUT/.config" || { echo "ABORT: KSU_SUSFS not y"; exit 1; }
+grep -q '^CONFIG_KSU_SUSFS_SUS_MOUNT=y' "$OUT/.config" || { echo "ABORT: KSU_SUSFS_SUS_MOUNT not y"; exit 1; }
+grep -q '^CONFIG_KSU_SUSFS_SUS_SU=y' "$OUT/.config" && { echo "ABORT: KSU_SUSFS_SUS_SU is y (must be n)"; exit 1; } || true
 
 # 6. build Image (KSU built-in; boot.img has no dtb -> Image only)
 mkdir -p "$OUT"; printf '0\n' > "$OUT/.version"
