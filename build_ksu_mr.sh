@@ -14,7 +14,7 @@ TOOLCHAIN=${TOOLCHAIN:-/root/toolchain/aosp-clang-r383902b1}
 OUT=${OUT:-out-ksu}
 JOBS=${JOBS:-$(nproc)}
 KSU_URL=${KSU_URL:-https://github.com/afdah/KernelSU-Next.git}
-KSU_PIN=30dfe298548928cd2344b7c3340db08afd4e8324
+KSU_PIN=e8014c6aca443ec20bf738d56b5c0370c9b7503e
 LOCALVER='-qgki-g3f7ff67280a0'
 export PATH="$TOOLCHAIN/bin:$PATH"
 export LLVM=1 DISABLE_WRAPPER=1 ARCH=arm64 CC=clang
@@ -46,6 +46,7 @@ SH=include/linux/seccomp.h
 grep -q "atomic_t filter_count;" "$SH" || { echo "ABORT: seccomp.h comment-trick missing"; exit 1; }
 sed -n '/struct seccomp {/,/};/p' "$SH" | grep -q filter_count && { echo "ABORT: seccomp.h struct has filter_count (boot-hang)"; exit 1; } || true
 grep -q "ksu_handle_sys_reboot" kernel/reboot.c || { echo "ABORT: reboot hook missing"; exit 1; }
+grep -q "ksu_handle_input_handle_event" drivers/input/input.c || { echo "ABORT: input hook missing"; exit 1; }
 for f in fs/exec.c fs/open.c fs/read_write.c fs/stat.c; do
   grep -q "#ifdef CONFIG_KSU" "$f" || { echo "ABORT: $f missing KSU guard"; exit 1; }
 done

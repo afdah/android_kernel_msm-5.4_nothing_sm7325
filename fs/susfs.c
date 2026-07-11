@@ -729,6 +729,18 @@ out_free_pathname:
 #ifdef CONFIG_KSU_SUSFS_SPOOF_UNAME
 static spinlock_t susfs_uname_spin_lock;
 static struct st_susfs_uname my_uname;
+static bool susfs_uname_spoof_active = false;
+
+bool susfs_is_uname_spoof_buffer_set(void)
+{
+	bool active;
+
+	spin_lock(&susfs_uname_spin_lock);
+	active = susfs_uname_spoof_active;
+	spin_unlock(&susfs_uname_spin_lock);
+	return active;
+}
+
 static void susfs_my_uname_init(void) {
 	memset(&my_uname, 0, sizeof(my_uname));
 }
@@ -753,6 +765,8 @@ void susfs_set_uname(void __user **user_info) {
 	} else {
 		strncpy(my_uname.version, info.version, __NEW_UTS_LEN);
 	}
+	susfs_uname_spoof_active =
+		(strcmp(info.release, "default") || strcmp(info.version, "default"));
 	spin_unlock(&susfs_uname_spin_lock);
 	SUSFS_LOGI("setting spoofed release: '%s', version: '%s'\n",
 				my_uname.release, my_uname.version);

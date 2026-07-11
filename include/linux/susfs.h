@@ -268,6 +268,7 @@ void susfs_auto_add_try_umount_for_bind_mount(struct path *path);
 #ifdef CONFIG_KSU_SUSFS_SPOOF_UNAME
 void susfs_set_uname(void __user **user_info);
 void susfs_spoof_uname(struct new_utsname* tmp);
+bool susfs_is_uname_spoof_buffer_set(void);
 #endif
 /* enable_log */
 #ifdef CONFIG_KSU_SUSFS_ENABLE_LOG
